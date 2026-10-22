@@ -156,9 +156,47 @@ h1 {
 .paddle,
 .ball,
 .brick,
-.bonus {
+.bonus,
+.confetti {
 	position: absolute;
 	z-index: 1;
+}
+
+.confetti {
+	inset: 0;
+	z-index: 2;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.confetti-piece {
+	position: absolute;
+	top: -12px;
+	left: var(--confetti-left);
+	width: 9px;
+	height: 16px;
+	background: var(--confetti-color);
+	opacity: 0;
+	transform: rotate(var(--confetti-rotation));
+	animation: confetti-fall var(--confetti-duration) var(--confetti-delay) ease-out forwards;
+}
+
+@keyframes confetti-fall {
+	0% {
+		opacity: 1;
+		transform: translateY(0) rotate(var(--confetti-rotation));
+	}
+
+	100% {
+		opacity: 0;
+		transform: translateY(620px) rotate(720deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.confetti-piece {
+		animation-duration: 1ms;
+	}
 }
 
 .paddle {

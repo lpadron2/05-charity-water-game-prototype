@@ -11,6 +11,7 @@ const resetButton = document.querySelector('#reset-button');
 const helpButton = document.querySelector('#help-button');
 const helpDialog = document.querySelector('#help-dialog');
 const closeHelpButton = document.querySelector('#close-help-button');
+const confetti = document.querySelector('#confetti');
 
 let score = 0;
 let bonusScore = 0;
@@ -81,6 +82,26 @@ function dropBonus(brick, isDirty) {
 	bonusObjects.push({ element: bonus, x: parseFloat(brick.style.left), y: parseFloat(brick.style.top), isDirty });
 }
 
+function clearConfetti() {
+	confetti.replaceChildren();
+}
+
+function showConfetti() {
+	const colors = ['#ffc907', '#2e9df7', '#8bd1cb', '#ff902a', '#f16061'];
+
+	// Create small paper pieces with different positions and fall speeds.
+	for (let index = 0; index < 80; index += 1) {
+		const piece = document.createElement('span');
+		piece.className = 'confetti-piece';
+		piece.style.setProperty('--confetti-left', `${Math.random() * 100}%`);
+		piece.style.setProperty('--confetti-color', colors[index % colors.length]);
+		piece.style.setProperty('--confetti-delay', `${Math.random() * 0.8}s`);
+		piece.style.setProperty('--confetti-duration', `${1.8 + Math.random() * 1.4}s`);
+		piece.style.setProperty('--confetti-rotation', `${Math.random() * 360}deg`);
+		confetti.appendChild(piece);
+	}
+}
+
 function updateBonuses() {
 	const paddleBox = paddle.getBoundingClientRect();
 	bonusObjects = bonusObjects.filter((bonus) => {
@@ -126,11 +147,12 @@ function endGame(title, copy) {
 	message.querySelector('h2').textContent = title;
 	message.querySelector('p').textContent = copy;
 	startButton.textContent = 'Play again';
+	startButton.hidden = false;
 	message.classList.remove('hidden');
 }
 
 function moveBall() {
-	if (!gameRunning) return;
+	if (!gameRunning || gamePaused) return;
 
 	const boardWidth = board.clientWidth;
 	const boardHeight = board.clientHeight;
@@ -170,7 +192,8 @@ function moveBall() {
 	updateBonuses();
 	drawGame();
 
-	if (document.querySelectorAll('.brick').length === 0) {
+	if (lives > 0 && document.querySelectorAll('.brick').length === 0) {
+		showConfetti();
 		endGame('You made a splash!', `You cleared the board with ${score} points.`);
 	} else {
 		animationId = requestAnimationFrame(moveBall);
@@ -179,6 +202,7 @@ function moveBall() {
 
 function startGame() {
 	document.querySelectorAll('.brick, .bonus').forEach((item) => item.remove());
+	clearConfetti();
 	score = 0;
 	bonusScore = 0;
 	lives = 3;
@@ -186,6 +210,7 @@ function startGame() {
 	createBricks();
 	resetBall();
 	message.classList.add('hidden');
+	startButton.hidden = false;
 	gameRunning = true;
 	gamePaused = false;
 	pauseButton.disabled = false;
@@ -202,8 +227,10 @@ function togglePause() {
 
 	if (gamePaused) {
 		cancelAnimationFrame(animationId);
+		keysPressed = {};
 		message.querySelector('h2').textContent = 'Game paused';
 		message.querySelector('p').textContent = 'Press Play when you are ready to continue.';
+		startButton.hidden = true;
 		message.classList.remove('hidden');
 	} else {
 		message.classList.add('hidden');
@@ -214,6 +241,7 @@ function togglePause() {
 function resetGame() {
 	cancelAnimationFrame(animationId);
 	document.querySelectorAll('.brick, .bonus').forEach((item) => item.remove());
+	clearConfetti();
 	score = 0;
 	bonusScore = 0;
 	lives = 3;
@@ -227,6 +255,7 @@ function resetGame() {
 	message.querySelector('h2').textContent = 'Ready to make a splash?';
 	message.querySelector('p').textContent = 'Move with the arrow keys or A and D.';
 	startButton.textContent = 'Start game';
+	startButton.hidden = false;
 	message.classList.remove('hidden');
 }
 
@@ -246,7 +275,7 @@ document.addEventListener('keyup', (event) => {
 });
 
 board.addEventListener('pointermove', (event) => {
-	if (!gameRunning) return;
+	if (!gameRunning || gamePaused) return;
 	const boardBox = board.getBoundingClientRect();
 	paddleX = event.clientX - boardBox.left - paddle.offsetWidth / 2;
 	paddleX = Math.max(0, Math.min(board.clientWidth - paddle.offsetWidth, paddleX));
